@@ -52,6 +52,12 @@ def get_stock_data():
         messagebox.showerror("Error", "Invalid company code")
 
 
+def on_closing():
+    """Handle the window close event."""
+    window.quit()  # Ensure Tkinter's mainloop is stopped properly
+    window.destroy()  # Close the window
+
+
 # Set up the main window
 window = tk.Tk()
 window.title("Stock Price Explorer")
@@ -60,10 +66,6 @@ window.geometry("800x600")
 # Menu bar setup
 menu_bar = Menu(window)
 window.config(menu=menu_bar)
-
-# File menu (if needed in the future)
-#file_menu = Menu(menu_bar, tearoff=False)
-#menu_bar.add_cascade(label="File", menu=file_menu)
 
 # Explore menu button (no cascade)
 menu_bar.add_command(label="Explore", command=get_stock_data)
@@ -119,6 +121,9 @@ period_slider.grid(row=4, column=0, padx=10, pady=5, sticky="w")
 
 # Update the current time every second
 update_time()
+
+# Handle the window close event
+window.protocol("WM_DELETE_WINDOW", on_closing)
 
 # Run the main loop for the Tkinter window
 window.mainloop()
