@@ -32,9 +32,8 @@ def get_stock_data():
             messagebox.showerror("Error", "No data available for the given company code.")
             return
 
-        # Clear the previous chart if exists
-        for widget in frame_chart.winfo_children():
-            widget.destroy()
+        # Clear the previous content (chart or table)
+        clear_chart()
 
         # Plot the stock closing price on a graph
         fig, ax = plt.subplots(figsize=(8, 5))
@@ -49,14 +48,22 @@ def get_stock_data():
         current_price = stock_info['Close'].iloc[-1]
         label_stock_current_price.config(text=f"{current_price:.2f}")
 
+        # Adjust the frame size dynamically
+        frame_chart.grid_rowconfigure(0, weight=1, minsize=300)  # Dynamic row size for chart
+        frame_chart.grid_columnconfigure(0, weight=1, minsize=400)  # Dynamic column size for chart
+
     except ValueError:
         messagebox.showerror("Error", "Invalid company code")
 
 
-def on_closing():
-    """Handle the window close event."""
-    window.quit()  # Ensure Tkinter's mainloop is stopped properly
-    window.destroy()  # Close the window
+def clear_chart():
+    """Clear the content (chart or table) from the window."""
+    for widget in frame_chart.winfo_children():
+        widget.destroy()
+
+    # Reset frame configuration after clearing
+    frame_chart.grid_rowconfigure(0, weight=0, minsize=100)  # Reset row size
+    frame_chart.grid_columnconfigure(0, weight=0, minsize=100)  # Reset column size
 
 
 def open_database():
@@ -85,15 +92,21 @@ def open_database():
         cursor.execute(f"SELECT * FROM {table_name} LIMIT 10")
         rows = cursor.fetchall()
 
-        # Display the records in the window
-        for widget in frame_table.winfo_children():
-            widget.destroy()
+        # Clear the previous content (chart or table)
+        clear_chart()
 
+        # Display the records in the window
         if rows:
             for i, row in enumerate(rows):
                 for j, value in enumerate(row):
-                    label = tk.Label(frame_table, text=value, font=("Arial", 10), relief="solid", width=15)
+                    label = tk.Label(
+                        frame_chart, text=value, font=("Arial", 10), relief="solid", width=15
+                    )
                     label.grid(row=i, column=j, padx=5, pady=2)
+
+            # Adjust the frame size dynamically
+            frame_chart.grid_rowconfigure(0, weight=1, minsize=300)  # Dynamic row size for table
+            frame_chart.grid_columnconfigure(0, weight=1, minsize=400)  # Dynamic column size for table
 
         conn.close()
 
@@ -102,10 +115,10 @@ def open_database():
         return
 
 
-def close_table():
-    """Close the table from the window."""
-    for widget in frame_table.winfo_children():
-        widget.destroy()
+def on_closing():
+    """Handle the window close event."""
+    window.quit()  # Ensure Tkinter's mainloop is stopped properly
+    window.destroy()  # Close the window
 
 
 # Set up the main window
@@ -121,7 +134,13 @@ window.config(menu=menu_bar)
 file_menu = Menu(menu_bar, tearoff=False)
 menu_bar.add_cascade(label="File", menu=file_menu)
 file_menu.add_command(label="Open", command=open_database)
-file_menu.add_command(label="Close", command=close_table)
+file_menu.add_command(label="Close", command=clear_chart)
+
+# Chart options
+chart_menu = Menu(menu_bar, tearoff=False)
+menu_bar.add_cascade(label="Chart", menu=chart_menu)
+chart_menu.add_command(label="Open", command=get_stock_data)
+chart_menu.add_command(label="Close", command=clear_chart)
 
 # Explore menu button (no cascade)
 menu_bar.add_command(label="Explore", command=get_stock_data)
@@ -166,16 +185,14 @@ label_delayed.grid(row=0, column=1, padx=10, pady=10, sticky="ne")
 label_stock_current_price = tk.Label(window, text="", font=("Arial", 30), anchor="e")
 label_stock_current_price.grid(row=1, column=1, padx=10, pady=0, sticky="ne")
 
-# Frame for displaying the chart
+# Frame for displaying the chart or table
 frame_chart = tk.Frame(window)
 frame_chart.grid(row=5, column=0, columnspan=2, padx=10, pady=10)
 
-# Frame for displaying the table
-frame_table = tk.Frame(window)
-frame_table.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
-
 # Slider for selecting the time period
-period_slider = tk.Scale(window, from_=1, to=365, orient="horizontal", label="Select Period:", font=("Arial", 10))
+period_slider = tk.Scale(
+    window, from_=1, to=365, orient="horizontal", label="Select Period:", font=("Arial", 10)
+)
 period_slider.set(30)
 period_slider.grid(row=4, column=0, padx=10, pady=5, sticky="w")
 
