@@ -1,23 +1,26 @@
 import tkinter as tk
 import yfinance as yf
-import pandas as pd
+from tkinter import messagebox, Menu
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 from datetime import datetime
-from tkinter import messagebox
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
 def update_time():
     """Update the current time on the label every second."""
-    current_time = datetime.now().strftime("%B %d, %Y %H:%M:%S")
+    current_time = datetime.now().strftime("%B %d, %Y")  # %H:%M:%S")
     label_time.config(text=current_time)
-    window.after(1000, update_time)
 
 
 def get_stock_data():
     """Fetch stock data for the entered company code and period, then display it on a chart."""
+    company_code = entry_company_code.get().strip()
+
+    if not company_code:
+        messagebox.showerror("Error", "Please enter a company code.")
+        return
+
     try:
-        company_code = entry_company_code.get()
         period = period_slider.get()
 
         # Fetch stock data using yfinance
@@ -49,15 +52,21 @@ def get_stock_data():
         messagebox.showerror("Error", "Invalid company code")
 
 
-def update_range(val):
-    """Update the label to show the selected time period."""
-    period_label.config(text=f"Period: {val} days")
-
-
 # Set up the main window
 window = tk.Tk()
 window.title("Stock Price Explorer")
 window.geometry("800x600")
+
+# Menu bar setup
+menu_bar = Menu(window)
+window.config(menu=menu_bar)
+
+# File menu (if needed in the future)
+#file_menu = Menu(menu_bar, tearoff=False)
+#menu_bar.add_cascade(label="File", menu=file_menu)
+
+# Explore menu button (no cascade)
+menu_bar.add_command(label="Explore", command=get_stock_data)
 
 # Configure grid layout for the window
 window.grid_columnconfigure(0, weight=1, minsize=100)
@@ -77,13 +86,13 @@ label_info = tk.Label(
     text=(
         "The stock information provided is for informational purposes only and "
         "is not intended for trading purposes. The stock information and charts "
-        "are provided by Yahoo Finance, a third party service, and the owner does "
+        "are provided by Yahoo Finance, a third-party service, and the owner does "
         "not provide information to this service."
     ),
     font=("Arial", 8),
     anchor="w",
     justify="left",
-    wraplength=350
+    wraplength=350,
 )
 label_info.grid(row=2, column=0, padx=10, pady=(5, 10), sticky="w")
 
@@ -94,10 +103,6 @@ label_company_code.grid(row=3, column=0, padx=10, pady=5, sticky="w")
 # Company code input field
 entry_company_code = tk.Entry(window, font=("Arial", 10))
 entry_company_code.grid(row=4, column=0, padx=10, pady=5, sticky="w")
-
-# Button to trigger stock data fetching
-button_main = tk.Button(window, text="Explore", font=("Arial", 10), command=get_stock_data)
-button_main.grid(row=4, column=1, padx=10, pady=5, sticky="w")
 
 # Label to indicate pricing delay
 label_delayed = tk.Label(window, text="Pricing delayed", font=("Arial", 14), anchor="e")
@@ -112,13 +117,9 @@ frame_chart = tk.Frame(window)
 frame_chart.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
 
 # Slider for selecting the time period
-period_slider = tk.Scale(window, from_=1, to=365, orient="horizontal", label="Select Time Period (in days)", command=update_range)
+period_slider = tk.Scale(window, from_=1, to=365, orient="horizontal", label="Select Period:", font=("Arial", 10))
 period_slider.set(30)
 period_slider.grid(row=5, column=0, padx=10, pady=5, sticky="w")
-
-# Label for displaying the selected period
-period_label = tk.Label(window, text="Period: 30 days", font=("Arial", 10))
-period_label.grid(row=5, column=1, padx=10, pady=5, sticky="w")
 
 # Update the current time every second
 update_time()
