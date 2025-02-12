@@ -1,14 +1,15 @@
 import tkinter as tk
+from tkinter import messagebox, Menu, filedialog
+import sqlite3
 import yfinance as yf
-from tkinter import messagebox, Menu
+from datetime import datetime
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
-from datetime import datetime
 
 
 def update_time():
     """Update the current time on the label every second."""
-    current_time = datetime.now().strftime("%B %d, %Y")  # %H:%M:%S")
+    current_time = datetime.now().strftime("%B %d, %Y")
     label_time.config(text=current_time)
 
 
@@ -58,6 +59,55 @@ def on_closing():
     window.destroy()  # Close the window
 
 
+def open_database():
+    """Open a database file and display the first 10 records."""
+    file_path = filedialog.askopenfilename(filetypes=[("SQLite Database", "*.db")])
+
+    if not file_path:
+        return
+
+    # Connect to the SQLite database
+    try:
+        conn = sqlite3.connect(file_path)
+        cursor = conn.cursor()
+
+        # Fetch the first 10 records from the first table
+        cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+        tables = cursor.fetchall()
+
+        if not tables:
+            messagebox.showerror("Error", "No tables found in the database.")
+            conn.close()
+            return
+
+        # Assume the first table is the one we want
+        table_name = tables[0][0]
+        cursor.execute(f"SELECT * FROM {table_name} LIMIT 10")
+        rows = cursor.fetchall()
+
+        # Display the records in the window
+        for widget in frame_table.winfo_children():
+            widget.destroy()
+
+        if rows:
+            for i, row in enumerate(rows):
+                for j, value in enumerate(row):
+                    label = tk.Label(frame_table, text=value, font=("Arial", 10), relief="solid", width=15)
+                    label.grid(row=i, column=j, padx=5, pady=2)
+
+        conn.close()
+
+    except sqlite3.Error as e:
+        messagebox.showerror("Error", f"Database error: {e}")
+        return
+
+
+def close_table():
+    """Close the table from the window."""
+    for widget in frame_table.winfo_children():
+        widget.destroy()
+
+
 # Set up the main window
 window = tk.Tk()
 window.title("Stock Price Explorer")
@@ -66,6 +116,12 @@ window.geometry("800x600")
 # Menu bar setup
 menu_bar = Menu(window)
 window.config(menu=menu_bar)
+
+# File options
+file_menu = Menu(menu_bar, tearoff=False)
+menu_bar.add_cascade(label="File", menu=file_menu)
+file_menu.add_command(label="Open", command=open_database)
+file_menu.add_command(label="Close", command=close_table)
 
 # Explore menu button (no cascade)
 menu_bar.add_command(label="Explore", command=get_stock_data)
@@ -113,6 +169,10 @@ label_stock_current_price.grid(row=1, column=1, padx=10, pady=0, sticky="ne")
 # Frame for displaying the chart
 frame_chart = tk.Frame(window)
 frame_chart.grid(row=5, column=0, columnspan=2, padx=10, pady=10)
+
+# Frame for displaying the table
+frame_table = tk.Frame(window)
+frame_table.grid(row=6, column=0, columnspan=2, padx=10, pady=10)
 
 # Slider for selecting the time period
 period_slider = tk.Scale(window, from_=1, to=365, orient="horizontal", label="Select Period:", font=("Arial", 10))
