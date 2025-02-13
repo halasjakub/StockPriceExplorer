@@ -148,7 +148,7 @@ def clear_data():
 
 
 def open_database():
-    """Open a database file and display the first 10 records."""
+    """Open a database file and display the first 10 records with a slicer for additional records."""
     file_path = filedialog.askopenfilename(filetypes=[("SQLite Database", "*.db")])
 
     if not file_path:
@@ -185,7 +185,7 @@ def open_database():
 
         # Add the table content to the scrollable frame
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        scrollbar.pack(side="right", fill="y")
+        scrollbar.pack(side="left", fill="y")  # Scrollbar on the left
         canvas.pack(side="left", fill="both", expand=True)
 
         # Display column names as headers
@@ -195,9 +195,8 @@ def open_database():
             )
             label.grid(row=0, column=col_num, padx=5, pady=2)
 
-        # Display the data with a slicer for large datasets
-        max_rows = 10  # Display up to 10 rows at a time
-        for i, row in enumerate(rows[:max_rows], start=1):  # Start from row 1 to leave space for headers
+        # Display only the first 20 rows of data, rest should be scrollable
+        for i, row in enumerate(rows[:20], start=1):  # Limit to 20 records
             for j, value in enumerate(row):
                 label = tk.Label(
                     scrollable_frame, text=value, font=("Arial", 10), relief="solid", width=15
