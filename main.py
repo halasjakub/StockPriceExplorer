@@ -135,6 +135,8 @@ def clear_data():
         cursor = conn.cursor()
 
         cursor.execute('DELETE FROM stock_prices')
+        conn.commit()
+        cursor.execute("DELETE FROM sqlite_sequence WHERE name='stock_prices'")
 
         conn.commit()
         conn.close()
