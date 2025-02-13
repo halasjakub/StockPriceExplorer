@@ -104,10 +104,10 @@ def export_data():
         # Insert data into the database
         for index, row in stock_data.iterrows():
             date_str = index.strftime('%Y-%m-%d')  # Convert date to string
-            open_price = float(row['Open'])
-            high_price = float(row['High'])
-            low_price = float(row['Low'])
-            close_price = float(row['Close'])
+            open_price = round(float(row['Open']),2)
+            high_price = round(float(row['High']),2)
+            low_price = round(float(row['Low']),2)
+            close_price = round(float(row['Close']),2)
             volume = int(row['Volume'])
 
             cursor.execute('''
