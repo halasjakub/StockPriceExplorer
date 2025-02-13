@@ -87,7 +87,7 @@ def export_data():
         conn = sqlite3.connect('stocks.db')
         cursor = conn.cursor()
 
-        # Create table if it doesn't exist
+        # Create table if it doesn't exist, with a new 'symbol' column
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS stock_prices (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -96,7 +96,8 @@ def export_data():
                 high REAL,
                 low REAL,
                 close REAL,
-                volume INTEGER
+                volume INTEGER,
+                symbol TEXT  -- New column to store the company symbol
             )
         ''')
 
@@ -110,9 +111,9 @@ def export_data():
             volume = int(row['Volume'])
 
             cursor.execute('''
-                INSERT INTO stock_prices (date, open, high, low, close, volume)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (date_str, open_price, high_price, low_price, close_price, volume))
+                INSERT INTO stock_prices (date, open, high, low, close, volume, symbol)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (date_str, open_price, high_price, low_price, close_price, volume, symbol))
 
         conn.commit()
         conn.close()
