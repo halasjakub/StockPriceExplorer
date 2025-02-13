@@ -66,6 +66,84 @@ def clear_chart():
     frame_chart.grid_columnconfigure(0, weight=0, minsize=100)  # Reset column size
 
 
+def export_data():
+    """Export stock data to the SQLite database based on user input."""
+    symbol = entry_company_code.get().strip()  # Get the value from entry_company_code
+    adjustable_period = period_slider.get()  # Get the value from period_slider
+
+    if not symbol:
+        messagebox.showerror("Error", "Please enter a company code.")
+        return
+
+    # Fetch stock data using yfinance
+    try:
+        stock_data = yf.download(symbol, period=f"{adjustable_period}d", interval="1d")
+
+        if stock_data.empty:
+            messagebox.showerror("Error", "No data available for the given company code.")
+            return
+
+        # Connect to the SQLite database
+        conn = sqlite3.connect('stocks.db')
+        cursor = conn.cursor()
+
+        # Create table if it doesn't exist
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS stock_prices (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT,
+                open REAL,
+                high REAL,
+                low REAL,
+                close REAL,
+                volume INTEGER
+            )
+        ''')
+
+        # Insert data into the database
+        for index, row in stock_data.iterrows():
+            date_str = index.strftime('%Y-%m-%d')  # Convert date to string
+            open_price = float(row['Open'])
+            high_price = float(row['High'])
+            low_price = float(row['Low'])
+            close_price = float(row['Close'])
+            volume = int(row['Volume'])
+
+            cursor.execute('''
+                INSERT INTO stock_prices (date, open, high, low, close, volume)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (date_str, open_price, high_price, low_price, close_price, volume))
+
+        conn.commit()
+        conn.close()
+
+        print("Data saved")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to download stock data: {e}")
+
+
+def clear_data():
+    """Clear the content (chart or table) from the window and delete data from the database."""
+    for widget in frame_chart.winfo_children():
+        widget.destroy()
+
+    frame_chart.grid_rowconfigure(0, weight=0, minsize=100)
+    frame_chart.grid_columnconfigure(0, weight=0, minsize=100)
+
+    try:
+        conn = sqlite3.connect('stocks.db')
+        cursor = conn.cursor()
+
+        cursor.execute('DELETE FROM stock_prices')
+
+        conn.commit()
+        conn.close()
+
+        print("Database cleared.")
+    except sqlite3.Error as e:
+        messagebox.showerror("Error", f"Database error: {e}")
+
+
 def open_database():
     """Open a database file and display the first 10 records."""
     file_path = filedialog.askopenfilename(filetypes=[("SQLite Database", "*.db")])
@@ -78,7 +156,6 @@ def open_database():
         conn = sqlite3.connect(file_path)
         cursor = conn.cursor()
 
-        # Fetch the first 10 records from the first table
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         tables = cursor.fetchall()
 
@@ -87,7 +164,6 @@ def open_database():
             conn.close()
             return
 
-        # Assume the first table is the one we want
         table_name = tables[0][0]
         cursor.execute(f"SELECT * FROM {table_name} LIMIT 10")
         rows = cursor.fetchall()
@@ -95,7 +171,6 @@ def open_database():
         # Clear the previous content (chart or table)
         clear_chart()
 
-        # Display the records in the window
         if rows:
             for i, row in enumerate(rows):
                 for j, value in enumerate(row):
@@ -104,9 +179,8 @@ def open_database():
                     )
                     label.grid(row=i, column=j, padx=5, pady=2)
 
-            # Adjust the frame size dynamically
-            frame_chart.grid_rowconfigure(0, weight=1, minsize=300)  # Dynamic row size for table
-            frame_chart.grid_columnconfigure(0, weight=1, minsize=400)  # Dynamic column size for table
+            frame_chart.grid_rowconfigure(0, weight=1, minsize=300)
+            frame_chart.grid_columnconfigure(0, weight=1, minsize=400)
 
         conn.close()
 
@@ -141,6 +215,12 @@ chart_menu = Menu(menu_bar, tearoff=False)
 menu_bar.add_cascade(label="Chart", menu=chart_menu)
 chart_menu.add_command(label="Open", command=get_stock_data)
 chart_menu.add_command(label="Close", command=clear_chart)
+
+# Data options
+data_menu = Menu(menu_bar, tearoff=False)
+menu_bar.add_cascade(label="Data", menu=data_menu)
+data_menu.add_command(label="Export", command=export_data)
+data_menu.add_command(label="Clear", command=clear_data)
 
 # Explore menu button (no cascade)
 menu_bar.add_command(label="Explore", command=get_stock_data)
