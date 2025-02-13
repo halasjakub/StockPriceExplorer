@@ -174,8 +174,19 @@ def open_database():
         # Clear the previous content (chart or table)
         clear_chart()
 
+        # Adding column headers
+        column_names = ['ID', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'Symbol']
+        
+        # Display column names as headers
+        for col_num, col_name in enumerate(column_names):
+            label = tk.Label(
+                frame_chart, text=col_name, font=("Arial", 10, 'bold'), relief="solid", width=15
+            )
+            label.grid(row=0, column=col_num, padx=5, pady=2)
+
+        # Display the data
         if rows:
-            for i, row in enumerate(rows):
+            for i, row in enumerate(rows, start=1):  # Start from row 1 to leave space for headers
                 for j, value in enumerate(row):
                     label = tk.Label(
                         frame_chart, text=value, font=("Arial", 10), relief="solid", width=15
