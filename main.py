@@ -104,10 +104,10 @@ def export_data():
         # Insert data into the database
         for index, row in stock_data.iterrows():
             date_str = index.strftime('%Y-%m-%d')  # Convert date to string
-            open_price = round(float(row['Open']),2)
-            high_price = round(float(row['High']),2)
-            low_price = round(float(row['Low']),2)
-            close_price = round(float(row['Close']),2)
+            open_price = round(float(row['Open']), 2)
+            high_price = round(float(row['High']), 2)
+            low_price = round(float(row['Low']), 2)
+            close_price = round(float(row['Close']), 2)
             volume = int(row['Volume'])
 
             cursor.execute('''
@@ -168,7 +168,7 @@ def open_database():
             return
 
         table_name = tables[0][0]
-        cursor.execute(f"SELECT * FROM {table_name} LIMIT 10")
+        cursor.execute(f"SELECT * FROM {table_name}")
         rows = cursor.fetchall()
 
         # Clear the previous content (chart or table)
@@ -176,25 +176,36 @@ def open_database():
 
         # Adding column headers
         column_names = ['ID', 'Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'Symbol']
-        
+
+        # Scrollable frame for table
+        canvas = tk.Canvas(frame_chart)
+        scrollbar = tk.Scrollbar(frame_chart, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=scrollbar.set)
+        scrollable_frame = tk.Frame(canvas)
+
+        # Add the table content to the scrollable frame
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        scrollbar.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+
         # Display column names as headers
         for col_num, col_name in enumerate(column_names):
             label = tk.Label(
-                frame_chart, text=col_name, font=("Arial", 10, 'bold'), relief="solid", width=15
+                scrollable_frame, text=col_name, font=("Arial", 10, 'bold'), relief="solid", width=15
             )
             label.grid(row=0, column=col_num, padx=5, pady=2)
 
-        # Display the data
-        if rows:
-            for i, row in enumerate(rows, start=1):  # Start from row 1 to leave space for headers
-                for j, value in enumerate(row):
-                    label = tk.Label(
-                        frame_chart, text=value, font=("Arial", 10), relief="solid", width=15
-                    )
-                    label.grid(row=i, column=j, padx=5, pady=2)
+        # Display the data with a slicer for large datasets
+        max_rows = 10  # Display up to 10 rows at a time
+        for i, row in enumerate(rows[:max_rows], start=1):  # Start from row 1 to leave space for headers
+            for j, value in enumerate(row):
+                label = tk.Label(
+                    scrollable_frame, text=value, font=("Arial", 10), relief="solid", width=15
+                )
+                label.grid(row=i, column=j, padx=5, pady=2)
 
-            frame_chart.grid_rowconfigure(0, weight=1, minsize=300)
-            frame_chart.grid_columnconfigure(0, weight=1, minsize=400)
+        frame_chart.grid_rowconfigure(0, weight=1, minsize=300)
+        frame_chart.grid_columnconfigure(0, weight=1, minsize=400)
 
         conn.close()
 
@@ -240,8 +251,17 @@ data_menu.add_command(label="Clear", command=clear_data)
 menu_bar.add_command(label="Explore", command=get_stock_data)
 
 # Configure grid layout for the window
-window.grid_columnconfigure(0, weight=1, minsize=100)
-window.grid_columnconfigure(1, weight=0, minsize=100)
+window.grid_columnconfigure(0, weight=1, minsize=150)  # Left column for slicer
+window.grid_columnconfigure(1, weight=3, minsize=100)  # Right column for table/chart
+window.grid_rowconfigure(5, weight=1, minsize=300)  # Dynamic row for content
+
+# Frame for displaying the slicer and stock information
+frame_left = tk.Frame(window)
+frame_left.grid(row=2, column=0, rowspan=3, padx=10, pady=10, sticky="nsew")
+
+# Frame for displaying the chart or table
+frame_chart = tk.Frame(window)
+frame_chart.grid(row=5, column=1, padx=10, pady=10, sticky="nsew")
 
 # Time label (current time)
 label_time = tk.Label(window, font=("Arial", 14), anchor="w")
@@ -278,10 +298,6 @@ label_delayed.grid(row=0, column=1, padx=10, pady=10, sticky="ne")
 # Label to show the current stock price
 label_stock_current_price = tk.Label(window, text="", font=("Arial", 30), anchor="e")
 label_stock_current_price.grid(row=1, column=1, padx=10, pady=0, sticky="ne")
-
-# Frame for displaying the chart or table
-frame_chart = tk.Frame(window)
-frame_chart.grid(row=5, column=0, columnspan=2, padx=10, pady=10)
 
 # Slider for selecting the time period
 period_slider = tk.Scale(
